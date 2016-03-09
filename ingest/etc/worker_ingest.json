@@ -1,7 +1,7 @@
 {    
-    "dbname" : "oni",
+    "dbname" : "duxbury",
     "huser" : "/user/oni",
-    "rabbitmq_server":"132.233.52.118",
+    "rabbitmq_server":"127.0.0.1",
     "dns":
         {
             "queue_name":"dns_ingest_queue",

@@ -1,9 +1,9 @@
 {
     "dns":{
             "huser" : "/user/oni",
-            "collector_path":"/mnt/sec_shared.nfs/dns",
+            "collector_path":"/mnt/ebs/dns",
             "pkt_num":"650000",
-            "pcap_split_staging":"/mnt/sec_shared.nfs/dns",
+            "pcap_split_staging":"/mnt/ebs/dns",
             "time_to_wait":3600,
             "queue_name":"dns_ingest_queue"
         },
@@ -11,7 +11,7 @@
     "flow":
         {
             "huser" : "/user/oni",
-            "collector_path":"/mnt/sec_shared.nfs/nfcapd",
+            "collector_path":"/mnt/ebs/nfcapd",
             "queue_name":"flow_ingest_queue"
         }
 }

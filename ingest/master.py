@@ -17,32 +17,32 @@ ingest_conf = json.loads(open (conf_file).read())
 
 def main():
 
-	# Input Parameters
-	parser = argparse.ArgumentParser(description="Master Ingest Framework")
-	parser.add_argument('-t','--type',dest='type',required=True,help='Type of data that will be ingested (e.g. dns, flow)',metavar='')
-	args = parser.parse_args()
+        # Input Parameters
+        parser = argparse.ArgumentParser(description="Master Ingest Framework")
+        parser.add_argument('-t','--type',dest='type',required=True,help='Type of data that will be ingested (e.g. dns, flow)',metavar='')
+        args = parser.parse_args()
 
-	start_ingest(args.type)
+        start_ingest(args.type)
 
 
 def start_ingest(data_type):
 
-	ingest = None
+        ingest = None
 
-	if os.getenv('KRB_AUTH'):
+        if os.getenv('KRB_AUTH'):
                 kb = Kerberos()
                 kb.authenticate()
 
-	if data_type == "dns":
-		ingest = dns_ingest(ingest_conf['dns'])
-	elif data_type == "flow":
-		ingest = flow_ingest(ingest_conf['flow'])
-	else:
-		print "Ingest type '{0}' is not supported".format(data_type)
+        if data_type == "dns":
+                ingest = dns_ingest(ingest_conf['dns'])
+        elif data_type == "flow":
+                ingest = flow_ingest(ingest_conf['flow'])
+        else:
+                print "Ingest type '{0}' is not supported".format(data_type)
                 sys.exit(1)
 
-	# start the ingest.
-	ingest.start()
+        # start the ingest.
+        ingest.start()
 
 
 if __name__ == '__main__':

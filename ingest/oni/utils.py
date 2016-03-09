@@ -2,6 +2,16 @@
 import sys
 import subprocess
 import pika
+import boto3 as boto
+import botocore
+
+client = boto.client('s3')
+s3 = boto.resource('s3')
+#added to worker_ingest.json
+s3_bucket = 'cpgcashare'
+staging_folder = 'staging'
+archive_folder = 'archive'
+mybucket = s3.Bucket(s3_bucket)
 
 class Util(object):
 
@@ -28,7 +38,7 @@ class Util(object):
 		print load_to_hadoop_script
 		subprocess.call(load_to_hadoop_script,shell=True)
 
-
+		
 	@classmethod
 	def send_new_file_notification(cls,file,queue_name):
 
@@ -46,17 +56,17 @@ class Util(object):
 		if data_type == 'flow':
 
 			# get file name and date.
-			file_name_parts = file.split('/')
-			file_name = file_name_parts[len(file_name_parts)-1]
+			#file_name_parts = file.split('/')
+			#file_name = file_name_parts[len(file_name_parts)-1]
 
-			file_date = file_name.split('.')[1]
+			file_date = file.split('.')[1]
 			binary_year = file_date[0:4]
 			binary_month = file_date[4:6]
 			binary_day = file_date[6:8]
 			binary_hour = file_date[8:10]
 			binary_date_path = file_date[0:8]
 
-			return binary_year, binary_month, binary_day, binary_hour, binary_date_path, file_name
+			return binary_year, binary_month, binary_day, binary_hour, binary_date_path
 
 
 		elif data_type == 'dns':
