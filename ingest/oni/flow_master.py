@@ -12,11 +12,12 @@ from oni.utils import Util
 #s3
 client = boto.client('s3')
 s3 = boto.resource('s3')
-s3_bucket = 'cpgcashare'
-staging_folder = 'staging'
-archive_folder = 'archive'
-mybucket = s3.Bucket(s3_bucket)
-exclusions = ('.current' '{0}/'.format(staging_folder))
+#provide s3 bucket information
+s3_bucket = ''
+staging_folder = ''
+archive_folder = ''
+
+
 class flow_ingest(object):
 
 

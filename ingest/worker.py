@@ -16,11 +16,15 @@ from oni.utils import Util
 
 client = boto.client('s3')
 s3 = boto.resource('s3')
-#added to worker_ingest.json
-s3_bucket = 'cpgcashare'
-staging_folder = 'staging'
-archive_folder = 'archive'
-mybucket = s3.Bucket(s3_bucket)
+
+#input s3 bucket containing the staging and archive folders
+s3_bucket = ''
+
+#s3 bucket subfolder that binary files will be loaded from
+staging_folder = ''
+
+#s3 bucket subfolder to use for binary storage
+archive_folder = ''
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 conf_file = "{0}/etc/worker_ingest.json".format(script_path)

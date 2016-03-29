@@ -2,16 +2,7 @@
 import sys
 import subprocess
 import pika
-import boto3 as boto
-import botocore
 
-client = boto.client('s3')
-s3 = boto.resource('s3')
-#added to worker_ingest.json
-s3_bucket = 'cpgcashare'
-staging_folder = 'staging'
-archive_folder = 'archive'
-mybucket = s3.Bucket(s3_bucket)
 
 class Util(object):
 
