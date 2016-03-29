@@ -1,5 +1,5 @@
 {    
-    "dbname" : "duxbury",
+    "dbname" : "oni",
     "huser" : "/user/oni",
     "rabbitmq_server":"127.0.0.1",
     "dns":
