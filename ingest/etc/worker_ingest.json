@@ -2,6 +2,9 @@
     "dbname" : "oni",
     "huser" : "/user/oni",
     "rabbitmq_server":"127.0.0.1",
+    "s3Bucket":"bucketname",
+    "stagingFolder":"staging",
+    "archiveFolder":"archive",
     "dns":
         {
             "queue_name":"dns_ingest_queue",
