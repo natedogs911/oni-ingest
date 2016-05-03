@@ -9,13 +9,6 @@ import boto3 as boto
 import botocore
 from oni.utils import Util
 
-#s3
-client = boto.client('s3')
-s3 = boto.resource('s3')
-s3_bucket = worker_conf['s3Bucket']
-staging_folder = worker_conf['stagingFolder']
-archive_folder = worker_conf['archiveFolder']
-
 
 
 class flow_ingest(object):
