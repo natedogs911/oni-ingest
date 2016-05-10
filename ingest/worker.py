@@ -22,13 +22,8 @@ script_path = os.path.dirname(os.path.abspath(__file__))
 conf_file = "{0}/etc/worker_ingest.json".format(script_path)
 worker_conf = json.loads(open (conf_file).read())
 
-#input s3 bucket containing the staging and archive folders
 s3_bucket = worker_conf['s3Bucket']
-
-#s3 bucket subfolder that binary files will be loaded from
 staging_folder = worker_conf['stagingFolder']
-
-#s3 bucket subfolder to use for binary storage
 archive_folder = worker_conf['archiveFolder']
 
 
@@ -147,6 +142,7 @@ def process_new_binary_file(new_file):
         subprocess.call(rm_tmp,shell=True)
 
         print datetime.datetime.now()
+        print "Done!!!"
 
 if __name__ == '__main__':
         main()

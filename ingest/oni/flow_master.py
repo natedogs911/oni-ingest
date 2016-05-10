@@ -1,7 +1,5 @@
 #!/bin/env python
 
-#from watchdog.observers import Observer
-#from watchdog.events import FileSystemEventHandler
 from multiprocessing import Process
 import time
 import os
@@ -19,7 +17,7 @@ class flow_ingest(object):
 
             self._initialize_members(conf)
 
-	def _initialize_members(self,conf):
+    def _initialize_members(self,conf):
 
             self._collector_path = None
             self._hdfs_root_path = None
