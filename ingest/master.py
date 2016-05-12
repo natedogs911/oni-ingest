@@ -9,6 +9,8 @@ from oni.dns_master import dns_ingest
 from oni.flow_master import flow_ingest
 from oni.kerberos import Kerberos
 
+client = boto.client('s3')
+s3 = boto.resource('s3')
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 conf_file = "{0}/etc/master_ingest.json".format(script_path)

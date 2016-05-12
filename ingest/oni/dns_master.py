@@ -3,8 +3,14 @@
 import os
 import time
 import subprocess
+import boto3 as boto
+import botocore
 
 from oni.utils import Util
+
+#s3_bucket = conf['dns']['s3Bucket']
+#staging_folder = conf['dns']['stagingFolder']
+#archive_folder = conf['dns']['archiveFolder']
 
 
 class dns_ingest(object):
@@ -38,63 +44,80 @@ class dns_ingest(object):
         self._pcap_split_staging = conf['pcap_split_staging']
         self._queue_name = conf['queue_name']
 
+        s3_bucket = conf['dns']['s3Bucket']
+        staging_folder = conf['dns']['stagingFolder']
+        archive_folder = conf['dns']['archiveFolder']
+
     def start(self):
 
-        # process pcap files in collector path.
-        print "Watching the path: {0} to collect files".format(self._collector_path)
-        while True:
-            for currdir, subdir, files in os.walk(self._collector_path):
-                for file in files:
-                    if file.endswith('.pcap'):
-                        print "New file: {0}".format(file)
-                        file_full_path = os.path.join(currdir, file)
-                        self._process_pcap_file(file, file_full_path, self._hdfs_root_path)
-                        print "file :{0} processed".format(file)
-            time.sleep(self._time_to_wait)
+        try:
+            while True:
+                print "Watching the S3 Bucket: {0} to collect files".format(s3_bucket)
+                file_list = client.list_objects(Bucket=s3_bucket, Prefix=staging_folder)['Contents']
+                for key in file_list:
+                    file_name_parts = key['Key'].split('/')
+                    file_name = file_name_parts[len(file_name_parts) - 1]
+                    filename_str = str(file_name)
+                    # get file name and date
+                    if filename_str and (not filename_str.isspace()):
+                        print "New file: {0}".format(file_name)
+                        binary_year, binary_month, binary_day, binary_hour, binary_date_path = Util.build_hdfs_path(file_name, self._dsource)
+                        #hdfs path with timestamp.
+                        aws_archive_path = "{0}/binary/{1}/{2}".format(archive_folder, binary_date_path, binary_hour)
+                        # get timestamp from the file name.
+                        file_date = file_name.split('.')[0]
+                        pcap_hour = file_date[-6:-4]
+                        pcap_date_path = file_date[-14:-6]
+                        # hdfs path with timestamp.
+                        local_path = "{0}/binary/{1}/{2}".format(hdfs_root_path, pcap_date_path, pcap_hour)
+                        # get file from AWS_s3
+                        client.download_file(s3_bucket, '{0}/{1}'.format(staging_folder, file_name), '../stage/{0}'.format(file_name))
+                        # move processed binary file to archive for holding
+                        s3.Object(s3_bucket, '{0}/{1}'.format(aws_archive_path, file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(s3_bucket, staging_folder, file_name))
+                        # delete staging file in s3
+                        s3.Object(s3_bucket, '{0}/{1}'.format(staging_folder, file_name)).delete()
+                        print "file :{0} staged".format(file)
+                        if file.endswith('.pcap'):
+                            file_full_path = os.path.join('../stage/', file)
+                            self._process_pcap_file(file, file_full_path, self._hdfs_root_path)
+                            print "file :{0} processed".format(file)
+                time.sleep(self._time_to_wait)
+
+        except KeyboardInterrupt:
+            print "exiting"
 
     def _process_pcap_file(self, file_name, file_local_path, hdfs_root_path):
-
-        # get timestamp from the file name.
-        file_date = file_name.split('.')[0]
-        pcap_hour = file_date[-6:-4]
-        pcap_date_path = file_date[-14:-6]
-
-        # hdfs path with timestamp.
-        hdfs_path = "{0}/binary/{1}/{2}".format(hdfs_root_path, pcap_date_path, pcap_hour)
-        Util.creat_hdfs_folder(hdfs_path)
 
         # get file size.
         file_size = os.stat(file_local_path)
         if file_size.st_size > 1145498644:
 
             # split file.
-            self._split_pcap_file(file_name, file_local_path, hdfs_path)
+            self._split_pcap_file(file_name, file_local_path, local_path)
         else:
-            # load file to hdfs
-            Util.load_to_hdfs(file_name, file_local_path, hdfs_path)
 
             # send rabbitmq notification.
-            hadoop_pcap_file = "{0}/{1}".format(hdfs_path, file_name)
-            Util.send_new_file_notification(hadoop_pcap_file, self._queue_name)
+            #local_pcap_file = "{0}/{1}".format(local_path, file_name)
+            Util.send_new_file_notification(file, self._queue_name)
 
-    def _split_pcap_file(self, file_name, file_local_path, hdfs_path):
+    def _split_pcap_file(self, file_name, file_local_path, local_path):
 
         # split file.
         name = file_name.split('.')[0]
-        split_cmd = "editcap -c {0} {1} {2}/{3}_split.pcap".format(self._pkt_num, file_local_path,
-                                                                   self._pcap_split_staging, name)
+        split_cmd = "editcap -c {0} {1} {2}/{3}_split.pcap".format(self._pkt_num, file_local_path, self._pcap_split_staging, name)
         print split_cmd
         subprocess.call(split_cmd, shell=True)
 
         for currdir, subdir, files in os.walk(self._pcap_split_staging):
             for file in files:
                 if file.endswith(".pcap") and "{0}_split".format(name) in file:
-                    # load file to hdfs.
-                    Util.load_to_hdfs(file, os.path.join(currdir, file), hdfs_path)
-
+                    #stage file for processing
+                    mv_cmd = "mv {0}/{1}_split {2}".format(self._pcap_split_staging, file, file_full_path)
+                    print split_cmd
+                    subprocess.call(mv_cmd, shell=True)
                     # send rabbitmq notificaion.
-                    hadoop_pcap_file = "{0}/{1}".format(hdfs_path, file)
-                    Util.send_new_file_notification(hadoop_pcap_file, self._queue_name)
+                    #local_pcap_file = "{0}/{1}".format(local_path, file)
+                    Util.send_new_file_notification(file, self._queue_name)
 
         rm_big_file = "rm {0}".format(file_local_path)
         print rm_big_file

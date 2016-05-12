@@ -7,7 +7,9 @@ import boto3 as boto
 import botocore
 from oni.utils import Util
 
-
+s3_bucket = worker_conf['flow']['s3Bucket']
+staging_folder = worker_conf['flow']['stagingFolder']
+archive_folder = worker_conf['flow']['archiveFolder']
 
 class flow_ingest(object):
 
