@@ -67,31 +67,32 @@ class dns_ingest(object):
                     if filename_str and (not filename_str.isspace()):
                         print "New file: {0}".format(file_name)
                         binary_year, binary_month, binary_day, binary_hour, binary_date_path = Util.build_hdfs_path(file_name, self._dsource)
-                        #hdfs path with timestamp.
+                        # local storage path
+                        file_local_path = '../stage/{0}'.format(file_name)
+                        #aws path with timestamp.
                         aws_archive_path = "{0}/binary/{1}/{2}".format(archive_folder, binary_date_path, binary_hour)
                         # get timestamp from the file name.
                         file_date = file_name.split('.')[0]
                         pcap_hour = file_date[-6:-4]
                         pcap_date_path = file_date[-14:-6]
-                        # hdfs path with timestamp.
-                        local_path = "{0}/binary/{1}/{2}".format(hdfs_root_path, pcap_date_path, pcap_hour)
                         # get file from AWS_s3
-                        client.download_file(s3_bucket, '{0}/{1}'.format(staging_folder, file_name), '../stage/{0}'.format(file_name))
-                        # move processed binary file to archive for holding
+                        client.download_file(s3_bucket, '{0}/{1}'.format(staging_folder, file_name), file_local_path)
+                        # move binary file to archive for holding
                         s3.Object(s3_bucket, '{0}/{1}'.format(aws_archive_path, file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(s3_bucket, staging_folder, file_name))
                         # delete staging file in s3
                         s3.Object(s3_bucket, '{0}/{1}'.format(staging_folder, file_name)).delete()
-                        print "file :{0} staged".format(file)
-                        if file.endswith('.pcap'):
-                            file_full_path = os.path.join('../stage/', file)
-                            self._process_pcap_file(file, file_full_path, self._hdfs_root_path)
-                            print "file :{0} processed".format(file)
+                        print "file :{0} staged".format(file_name)
+                        if file_name.endswith('.pcap'):
+                            self._process_pcap_file(file_name, file_local_path)
+                            print "file :{0} processed".format(file_name)
                 time.sleep(self._time_to_wait)
 
         except KeyboardInterrupt:
             print "exiting"
 
-    def _process_pcap_file(self, file_name, file_local_path, hdfs_root_path):
+    def _process_pcap_file(self, file_name, file_local_path):
+
+        local_path = os.getenv('LUSER')
 
         # get file size.
         file_size = os.stat(file_local_path)
@@ -103,25 +104,25 @@ class dns_ingest(object):
 
             # send rabbitmq notification.
             #local_pcap_file = "{0}/{1}".format(local_path, file_name)
-            Util.send_new_file_notification(file, self._queue_name)
+            Util.send_new_file_notification(file_name, self._queue_name)
 
     def _split_pcap_file(self, file_name, file_local_path, local_path):
 
         # split file.
-        name = file_name.split('.')[0]
-        split_cmd = "editcap -c {0} {1} {2}/{3}_split.pcap".format(self._pkt_num, file_local_path, self._pcap_split_staging, name)
+        #name = file_name.split('.')[0]
+        split_cmd = "editcap -c {0} {1} {2}/{3}_split.pcap".format(self._pkt_num, file_local_path, self._pcap_split_staging, file_name)
         print split_cmd
         subprocess.call(split_cmd, shell=True)
 
         for currdir, subdir, files in os.walk(self._pcap_split_staging):
             for file in files:
-                if file.endswith(".pcap") and "{0}_split".format(name) in file:
-                    #stage file for processing
-                    mv_cmd = "mv {0}/{1}_split {2}".format(self._pcap_split_staging, file, file_full_path)
-                    print split_cmd
-                    subprocess.call(mv_cmd, shell=True)
+                if file.endswith(".pcap") and "{0}_split".format(file_name) in file:
                     # send rabbitmq notificaion.
                     #local_pcap_file = "{0}/{1}".format(local_path, file)
+                    # stage file for processing
+                    mv_cmd = "mv {0}/{1}_split ../stage/".format(self._pcap_split_staging, file)
+                    print mv_cmd
+                    subprocess.call(mv_cmd, shell=True)
                     Util.send_new_file_notification(file, self._queue_name)
 
         rm_big_file = "rm {0}".format(file_local_path)

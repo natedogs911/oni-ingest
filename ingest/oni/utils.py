@@ -60,11 +60,11 @@ class Util(object):
             # file_name_parts = file.split('/')
             # file_name = file_name_parts[len(file_name_parts) - 1]
 
-            file_date = file_name.split('.')[0]
+            file_date = file.split('.')[0]
             binary_year = file_date[-14:-10]
             binary_month = file_date[-10:-8]
             binary_day = file_date[-8:-6]
             binary_hour = file_date[-6:-4]
             binary_date_path = file_date[-14:-6]
 
-            return binary_year, binary_month, binary_day, binary_hour, binary_date_path, file_name
+            return binary_year, binary_month, binary_day, binary_hour, binary_date_path
