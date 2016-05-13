@@ -1,78 +1,70 @@
-
 import sys
 import subprocess
 import pika
 
 
 class Util(object):
+    @classmethod
+    def validate_parameter(cls, parameter, message):
+        if parameter == None or parameter == "":
+            cls.logger.error(message)
+            sys.exit(1)
 
-	@classmethod
-	def validate_parameter(cls,parameter,message):
-		if parameter == None or parameter == "":
-			cls.logger.error(message)
-			sys.exit(1)
+    @classmethod
+    def creat_hdfs_folder(cls, hdfs_path):
 
-	@classmethod
-	def creat_hdfs_folder(cls,hdfs_path):
+        hadoop_create_folder = "hadoop fs -mkdir -p {0}".format(hdfs_path)
+        print hadoop_create_folder
+        subprocess.call(hadoop_create_folder, shell=True)
 
-		hadoop_create_folder="hadoop fs -mkdir -p {0}".format(hdfs_path)
-		print hadoop_create_folder
-         	subprocess.call(hadoop_create_folder,shell=True)
+    @classmethod
+    def load_to_hdfs(cls, file_name, file_local_path, hdfs_path):
 
-	@classmethod
-	def load_to_hdfs(cls,file_name,file_local_path,hdfs_path):
+        # move nfcapd file to hadoop.
+        hadoop_pcap_file = "{0}/{1}".format(hdfs_path, file_name)
+        load_to_hadoop_script = "hadoop fs -moveFromLocal {0} {1}".format(file_local_path, hadoop_pcap_file)
+        # load_to_hadoop_script = "hadoop fs -put {0} {1}".format(file_local_path,hadoop_pcap_file)
+        print load_to_hadoop_script
+        subprocess.call(load_to_hadoop_script, shell=True)
 
-		# move nfcapd file to hadoop.
-		hadoop_pcap_file = "{0}/{1}".format(hdfs_path,file_name)
-		load_to_hadoop_script = "hadoop fs -moveFromLocal {0} {1}".format(file_local_path,hadoop_pcap_file)
-		# load_to_hadoop_script = "hadoop fs -put {0} {1}".format(file_local_path,hadoop_pcap_file)
-		print load_to_hadoop_script
-		subprocess.call(load_to_hadoop_script,shell=True)
+    @classmethod
+    def send_new_file_notification(cls, file, queue_name):
 
-		
-	@classmethod
-	def send_new_file_notification(cls,file,queue_name):
+        connection_send = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection_send.channel()
+        channel.queue_declare(queue=queue_name)
+        channel.basic_publish(exchange='', routing_key=queue_name, body=file)
+        connection_send.close()
 
-		connection_send = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-		channel = connection_send.channel()
-		channel.queue_declare(queue=queue_name)
-		channel.basic_publish(exchange='',routing_key=queue_name,body=file)
-		connection_send.close()
+    @classmethod
+    def build_hdfs_path(cls, file, data_type):
 
+        if data_type == 'flow':
 
-	@classmethod
-	def build_hdfs_path(cls,file,data_type):
+            # get file name and date.
+            # file_name_parts = file.split('/')
+            # file_name = file_name_parts[len(file_name_parts)-1]
 
+            file_date = file.split('.')[1]
+            binary_year = file_date[0:4]
+            binary_month = file_date[4:6]
+            binary_day = file_date[6:8]
+            binary_hour = file_date[8:10]
+            binary_date_path = file_date[0:8]
 
-		if data_type == 'flow':
+            return binary_year, binary_month, binary_day, binary_hour, binary_date_path
 
-			# get file name and date.
-			#file_name_parts = file.split('/')
-			#file_name = file_name_parts[len(file_name_parts)-1]
+        elif data_type == 'dns':
 
-			file_date = file.split('.')[1]
-			binary_year = file_date[0:4]
-			binary_month = file_date[4:6]
-			binary_day = file_date[6:8]
-			binary_hour = file_date[8:10]
-			binary_date_path = file_date[0:8]
+            # get file name and date
+            # file_name_parts = file.split('/')
+            # file_name = file_name_parts[len(file_name_parts) - 1]
 
-			return binary_year, binary_month, binary_day, binary_hour, binary_date_path
+            file_date = file_name.split('.')[0]
+            binary_year = file_date[-14:-10]
+            binary_month = file_date[-10:-8]
+            binary_day = file_date[-8:-6]
+            binary_hour = file_date[-6:-4]
+            binary_date_path = file_date[-14:-6]
 
-		elif data_type == 'dns':
-
-			# get file name and date
-			#file_name_parts = file.split('/')
-			#file_name = file_name_parts[len(file_name_parts) - 1]
-
-			file_date = file_name.split('.')[0]
-			binary_year = file_date[-14:-10]
-			binary_month = file_date[-10:-8]
-			binary_day = file_date[-8:-6]
-			binary_hour = file_date[-6:-4]
-			binary_date_path = file_date[-14:-6]
-
-			return binary_year, binary_month, binary_day, binary_hour, binary_date_path, file_name
-
-
-
+            return binary_year, binary_month, binary_day, binary_hour, binary_date_path, file_name
