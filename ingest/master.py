@@ -4,6 +4,8 @@ import argparse
 import json
 import os
 import sys
+#import boto3 as boto
+#import botocore
 
 from oni.dns_master import dns_ingest
 from oni.flow_master import flow_ingest
@@ -14,7 +16,7 @@ s3 = boto.resource('s3')
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 conf_file = "{0}/etc/master_ingest.json".format(script_path)
-ingest_conf = json.loads(open (conf_file).read())
+ingest_conf = json.loads(open(conf_file).read())
 
 
 def main():

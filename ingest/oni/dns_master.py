@@ -8,10 +8,12 @@ import botocore
 
 from oni.utils import Util
 
-#s3_bucket = conf['dns']['s3Bucket']
-#staging_folder = conf['dns']['stagingFolder']
-#archive_folder = conf['dns']['archiveFolder']
+s3_bucket = 'bucketname'
+staging_folder = 'staging'
+archive_folder = 'archive'
 
+client = boto.client('s3')
+s3 = boto.resource('s3')
 
 class dns_ingest(object):
     def __init__(self, conf):
@@ -35,6 +37,9 @@ class dns_ingest(object):
         Util.validate_parameter(conf['pkt_num'], conf_err_msg.format("pkt_num"))
         Util.validate_parameter(conf['pcap_split_staging'], conf_err_msg.format("pcap_split_staging"))
         Util.validate_parameter(conf['time_to_wait'], conf_err_msg.format("time_to_wait"))
+        #Util.validate_parameter(conf['s3Bucket'], conf_err_msg.format("s3Bucket"))
+        #Util.validate_parameter(conf['stagingFolder'], conf_err_msg.format("stagingFolder"))
+        #Util.validate_parameter(conf['archiveFolder'], conf_err_msg.format("archiveFolder"))
 
         # set configuration.
         self._collector_path = conf['collector_path']
@@ -44,9 +49,9 @@ class dns_ingest(object):
         self._pcap_split_staging = conf['pcap_split_staging']
         self._queue_name = conf['queue_name']
 
-        s3_bucket = conf['dns']['s3Bucket']
-        staging_folder = conf['dns']['stagingFolder']
-        archive_folder = conf['dns']['archiveFolder']
+        #s3_bucket = conf['s3Bucket']
+        #staging_folder = conf['stagingFolder']
+        #archive_folder = conf['archiveFolder']
 
     def start(self):
 

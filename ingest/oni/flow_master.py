@@ -7,19 +7,22 @@ import boto3 as boto
 import botocore
 from oni.utils import Util
 
-s3_bucket = worker_conf['flow']['s3Bucket']
-staging_folder = worker_conf['flow']['stagingFolder']
-archive_folder = worker_conf['flow']['archiveFolder']
+s3_bucket = 'bucketname'
+staging_folder = 'staging'
+archive_folder = 'archive'
+
+client = boto.client('s3')
+s3 = boto.resource('s3')
 
 class flow_ingest(object):
 
 
 
-	def __init__(self,conf):
+        def __init__(self,conf):
 
             self._initialize_members(conf)
 
-    def _initialize_members(self,conf):
+        def _initialize_members(self,conf):
 
             self._collector_path = None
             self._hdfs_root_path = None
@@ -35,6 +38,9 @@ class flow_ingest(object):
             self._hdfs_root_path = "{0}/{1}".format(conf['huser'] , self._dsource)
             self._queue_name = conf['queue_name']
 
+            #s3_bucket = conf['s3Bucket']
+            #staging_folder = conf['stagingFolder']
+            #archive_folder = conf['archiveFolder']
 
         def start(self):
 
