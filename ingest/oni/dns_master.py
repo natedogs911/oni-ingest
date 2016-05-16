@@ -49,9 +49,9 @@ class dns_ingest(object):
         self._pcap_split_staging = conf['pcap_split_staging']
         self._queue_name = conf['queue_name']
 
-        #s3_bucket = conf['s3Bucket']
-        #staging_folder = conf['stagingFolder']
-        #archive_folder = conf['archiveFolder']
+        #s3Bucket = conf['s3_bucket']
+        #stagingFolder = conf['staging_folder']
+        #archiveFolder = conf['archive_folder']
 
     def start(self):
 
@@ -104,6 +104,7 @@ class dns_ingest(object):
 
             # send rabbitmq notification.
             #local_pcap_file = "{0}/{1}".format(local_path, file_name)
+            print "Queuing " + file_name
             Util.send_new_file_notification(file_name, self._queue_name)
 
     def _split_pcap_file(self, file_name, file_local_path, local_path):
@@ -120,9 +121,10 @@ class dns_ingest(object):
                     # send rabbitmq notificaion.
                     #local_pcap_file = "{0}/{1}".format(local_path, file)
                     # stage file for processing
-                    mv_cmd = "mv {0}/{1}_split ../stage/".format(self._pcap_split_staging, file)
+                    mv_cmd = "mv {0}/{1} ../stage/".format(self._pcap_split_staging, file)
                     print mv_cmd
                     subprocess.call(mv_cmd, shell=True)
+                    print "Queuing " + file
                     Util.send_new_file_notification(file, self._queue_name)
 
         rm_big_file = "rm {0}".format(file_local_path)

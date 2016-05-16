@@ -29,13 +29,17 @@ if [ $INGEST_TYPE != "dns" ] && [ $INGEST_TYPE != "flow"  ]; then
 fi
 
 #-----------------------------------------------------------------------------------
-# Create screens for Mastar and Worker.
+# Create screens for Master and Worker.
 #-----------------------------------------------------------------------------------
 
 INGEST_DATE=`date +"%H_%M_%S"`
 
 screen -d -m -S OniIngest_${INGEST_TYPE}_${INGEST_DATE}  -s /bin/bash
 screen -dr  OniIngest_${INGEST_TYPE}_${INGEST_DATE} -X screen -t Master sh -c "python master.py -t ${INGEST_TYPE}; echo 'Closing Master...'; sleep 60"
+
+#if [[ $KRB_AUTH == true ]]; then
+#screen -dr  OniIngest_${INGEST_TYPE}_${INGEST_DATE} -X screen -t Master sh -c "python ./oni/kerberos_sa.py; echo 'Stopping kerberos authentication...'; sleep 60"
+#fi
 
 
 
