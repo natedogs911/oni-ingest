@@ -3,9 +3,9 @@
 #####################################
 # please customize the below fields #
 
-s3_bucket='cpgcashare'
-s3_folder='dns/test'
-binary_path=./time/
+s3_bucket='bucketname'
+s3_folder='bucket_subfolder'
+binary_path=/path/to/local/files
 
 #####################################
 initial_list=initialized
