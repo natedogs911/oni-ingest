@@ -38,7 +38,7 @@ screen -d -m -S OniIngest_${INGEST_TYPE}_${INGEST_DATE}  -s /bin/bash
 screen -dr  OniIngest_${INGEST_TYPE}_${INGEST_DATE} -X screen -t Master sh -c "python master.py -t ${INGEST_TYPE}; echo 'Closing Master...'; sleep 60"
 
 #if [[ $KRB_AUTH == true ]]; then
-#screen -dr  OniIngest_${INGEST_TYPE}_${INGEST_DATE} -X screen -t Master sh -c "python ./oni/kerberos_sa.py; echo 'Stopping kerberos authentication...'; sleep 60"
+#screen -dr  OniIngest_${INGEST_TYPE}_${INGEST_DATE} -X screen -t Kerberos sh -c "python ./oni/kerberos_sa.py; echo 'Stopping kerberos authentication...'; sleep 60"
 #fi
 
 
