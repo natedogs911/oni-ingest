@@ -4,8 +4,8 @@ import argparse
 import json
 import os
 import sys
-#import boto3 as boto
-#import botocore
+import boto3 as boto
+import botocore
 
 from oni.dns_master import dns_ingest
 from oni.flow_master import flow_ingest
