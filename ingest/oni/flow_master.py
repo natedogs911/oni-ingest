@@ -7,9 +7,6 @@ import boto3 as boto
 import botocore
 from oni.utils import Util
 
-s3_bucket = 'bucketname'
-staging_folder = 'staging'
-archive_folder = 'archive'
 
 client = boto.client('s3')
 s3 = boto.resource('s3')
@@ -37,18 +34,17 @@ class flow_ingest(object):
             self._collector_path = conf['collector_path']
             self._hdfs_root_path = "{0}/{1}".format(conf['huser'] , self._dsource)
             self._queue_name = conf['queue_name']
-
-            #s3_bucket = conf['s3Bucket']
-            #staging_folder = conf['stagingFolder']
-            #archive_folder = conf['archiveFolder']
+            self._s3_bucket = conf['s3_bucket']
+            self._staging_folder = conf['staging_folder']
+            self._archive_folder = conf['archive_folder']
 
         def start(self):
 
             try:
                 while True:
                     time.sleep(5)
-                    print "Watching the S3 Bucket: {0} to collect files".format(s3_bucket)
-                    file_list=client.list_objects(Bucket=s3_bucket,Prefix=staging_folder)['Contents']
+                    print "Watching the S3 Bucket: {0} to collect files".format(self._s3_bucket)
+                    file_list=client.list_objects(Bucket=self._s3_bucket,Prefix=self._staging_folder)['Contents']
                     for key in file_list:
                         file_name_parts = key['Key'].split('/')
                         file_name = file_name_parts[len(file_name_parts)-1]
@@ -57,19 +53,19 @@ class flow_ingest(object):
                         if filename_str and (not filename_str.isspace()):
                             binary_year,binary_month,binary_day,binary_hour,binary_date_path =  Util.build_hdfs_path(file_name,self._dsource)
                             # hdfs path with timestamp.
-                            aws_archive_path = "{0}/binary/{1}/{2}".format(archive_folder,binary_date_path,binary_hour)
+                            aws_archive_path = "{0}/binary/{1}/{2}".format(self._archive_folder,binary_date_path,binary_hour)
                         if filename_str and (not filename_str.isspace()):
                             if not  ".current" in file_name:
                                 print file_name
                                 # get file from AWS_s3
-                                client.download_file(s3_bucket, '{0}/{1}'.format(staging_folder,file_name), '../stage/{0}'.format(file_name))
+                                client.download_file(self._s3_bucket, '{0}/{1}'.format(self._staging_folder,file_name), '../stage/{0}'.format(file_name))
                                 p = Process(target=Util.send_new_file_notification, args=(file_name,self._queue_name))
                                 p.start()
                                 p.join()
                                 # move processed binary file to archive for holding
-                                s3.Object(s3_bucket,'{0}/{1}'.format(aws_archive_path,file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(s3_bucket,staging_folder,file_name))
+                                s3.Object(self._s3_bucket,'{0}/{1}'.format(aws_archive_path,file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(self._s3_bucket,self._staging_folder,file_name))
                                 #delete staging file in s3
-                                s3.Object(s3_bucket,'{0}/{1}'.format(staging_folder,file_name)).delete()
+                                s3.Object(self._s3_bucket,'{0}/{1}'.format(self._staging_folder,file_name)).delete()
                                 print "Done !!!!!"
 
             except KeyboardInterrupt:

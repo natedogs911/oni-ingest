@@ -8,10 +8,6 @@ import botocore
 
 from oni.utils import Util
 
-s3_bucket = 'bucketname'
-staging_folder = 'staging'
-archive_folder = 'archive'
-
 client = boto.client('s3')
 s3 = boto.resource('s3')
 
@@ -49,16 +45,17 @@ class dns_ingest(object):
         self._pcap_split_staging = conf['pcap_split_staging']
         self._queue_name = conf['queue_name']
 
-        #s3Bucket = conf['s3_bucket']
-        #stagingFolder = conf['staging_folder']
-        #archiveFolder = conf['archive_folder']
+        self._s3_bucket = conf['s3_bucket']
+        self._staging_folder = conf['staging_folder']
+        self._archive_folder = conf['archive_folder']
+
 
     def start(self):
 
         try:
             while True:
-                print "Watching the S3 Bucket: {0} to collect files".format(s3_bucket)
-                file_list = client.list_objects(Bucket=s3_bucket, Prefix=staging_folder)['Contents']
+                print "Watching the S3 Bucket: {0} to collect files".format(self._s3_bucket)
+                file_list = client.list_objects(Bucket=self._s3_bucket, Prefix=self._staging_folder)['Contents']
                 for key in file_list:
                     file_name_parts = key['Key'].split('/')
                     file_name = file_name_parts[len(file_name_parts) - 1]
@@ -70,17 +67,17 @@ class dns_ingest(object):
                         # local storage path
                         file_local_path = '../stage/{0}'.format(file_name)
                         #aws path with timestamp.
-                        aws_archive_path = "{0}/binary/{1}/{2}".format(archive_folder, binary_date_path, binary_hour)
+                        aws_archive_path = "{0}/binary/{1}/{2}".format(self._archive_folder, binary_date_path, binary_hour)
                         # get timestamp from the file name.
                         file_date = file_name.split('.')[0]
                         pcap_hour = file_date[-6:-4]
                         pcap_date_path = file_date[-14:-6]
                         # get file from AWS_s3
-                        client.download_file(s3_bucket, '{0}/{1}'.format(staging_folder, file_name), file_local_path)
+                        client.download_file(self._s3_bucket, '{0}/{1}'.format(self._staging_folder, file_name), file_local_path)
                         # move binary file to archive for holding
-                        s3.Object(s3_bucket, '{0}/{1}'.format(aws_archive_path, file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(s3_bucket, staging_folder, file_name))
+                        s3.Object(self._s3_bucket, '{0}/{1}'.format(aws_archive_path, file_name)).copy_from(CopySource='{0}/{1}/{2}'.format(self._s3_bucket, self._staging_folder, file_name))
                         # delete staging file in s3
-                        s3.Object(s3_bucket, '{0}/{1}'.format(staging_folder, file_name)).delete()
+                        s3.Object(self._s3_bucket, '{0}/{1}'.format(self._staging_folder, file_name)).delete()
                         print "file :{0} staged".format(file_name)
                         if file_name.endswith('.pcap'):
                             self._process_pcap_file(file_name, file_local_path)
