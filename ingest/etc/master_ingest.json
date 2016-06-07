@@ -5,13 +5,19 @@
             "pkt_num":"650000",
             "pcap_split_staging":"/mnt/ebs/dns",
             "time_to_wait":5,
-            "queue_name":"dns_ingest_queue"
+            "queue_name":"dns_ingest_queue",
+            "s3_bucket":"bucketname",
+            "staging_folder":"staging",
+            "archive_folder":"archive"
         },
         
     "flow":
         {
             "huser" : "/user/oni",
             "collector_path":"/mnt/ebs/nfcapd",
-            "queue_name":"flow_ingest_queue"
+            "queue_name":"flow_ingest_queue",
+            "s3_bucket":"bucketname",
+            "staging_folder":"staging",
+            "archive_folder":"archive"
         }
 }
