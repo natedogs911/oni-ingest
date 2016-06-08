@@ -5,16 +5,28 @@
             "port_server":"9092"
         },
     "dns":{
-            "collector_path":"/mnt/sec_shared.nfs/dns",
+            "collector_path":"/home/oni/collector_path",
             "pkt_num":"650000",
-            "pcap_split_staging":"/mnt/sec_shared.nfs/dns",
+            "pcap_split_staging":"/home/oni/oni-ingest/stage",
             "time_to_wait":3600,
             "topic":"dns"
         },
-        
     "flow":
         {
-            "collector_path":"/mnt/sec_shared.nfs/nfcapd",
+            "collector_path":"/home/oni/collector_path",
             "topic":"flow"
-        }
+        },
+    "aws_flow":
+        {
+            "s3_bucket":"bucketname",
+            "staging_folder":"staging",
+            "archive_folder":"archive",
+            "topic":"aws_flow"
+        },
+    "aws_dns":{
+            "pkt_num":"650000",
+            "pcap_split_staging":"/home/oni/oni-ingest/stage",
+            "time_to_wait":3600,
+            "topic":"aws_dns"
+        },
 }
