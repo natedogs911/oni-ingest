@@ -68,6 +68,8 @@ class flow_ingest(object):
                                 s3.Object(self._s3_bucket,'{0}/{1}'.format(self._staging_folder,file_name)).delete()
                                 print "Done !!!!!"
 
+            except KeyError:
+                print "the AWS S3 folder no longer exists"
             except KeyboardInterrupt:
                 print "exiting"
 
