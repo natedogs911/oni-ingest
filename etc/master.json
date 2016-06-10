@@ -28,5 +28,5 @@
             "pcap_split_staging":"/home/oni/oni-ingest/stage",
             "time_to_wait":3600,
             "topic":"aws_dns"
-        },
+        }
 }
