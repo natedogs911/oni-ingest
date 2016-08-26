@@ -17,13 +17,11 @@ class Worker(object):
         Util.validate_parameter(db_name,conf_err_msg.format("db_name"))
         Util.validate_parameter(app_path,conf_err_msg.format("app_path"))
         Util.validate_parameter(worker_conf['topic'],conf_err_msg.format("topic"))
-        Util.validate_parameter(worker_conf['local_staging'],conf_err_msg.format("local_staging"))
 
         self._db_name = db_name
         self._app_path = app_path
         self._topic = worker_conf['topic']
         self._process_opt = worker_conf['process_opt']
-        self._local_staging = worker_conf['local_staging']
         self._mb_consumer = mb_consumer
 
     def start(self):
