@@ -1,0 +1,6 @@
+
+{
+    "collector_path":"/tmp/test/",
+     "local_staging":"/tmp/",
+     "process_opt":""
+}

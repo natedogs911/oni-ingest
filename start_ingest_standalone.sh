@@ -23,9 +23,9 @@ if [ -z $WORKERS_NUM ];then
 fi
 
 
-if [ $INGEST_TYPE != "dns" ] && [ $INGEST_TYPE != "flow" ]  && [  $INGEST_TYPE != "proxy" ] ; then
+if [ $INGEST_TYPE != "dns" ] && [ $INGEST_TYPE != "flow" ]  && [  $INGEST_TYPE != "proxy" ] && [  $INGEST_TYPE != "test" ] ; then
     
-    echo "Please provide a valid ingest type: flow|dns"
+    echo "Please provide a valid ingest type: flow|dns|proxy"
     exit 1
 
 fi
