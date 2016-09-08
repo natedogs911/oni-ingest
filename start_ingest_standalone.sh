@@ -1,5 +1,13 @@
 #!/bin/bash
 
+source /etc/duxbay.conf
+
+export KRB_AUTH
+export KINITPATH
+export KINITOPTS
+export KEYTABPATH
+export KRB_USER
+
 #-----------------------------------------------------------------------------------
 # Validate parameters.
 #-----------------------------------------------------------------------------------
