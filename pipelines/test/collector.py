@@ -98,5 +98,5 @@ class Collector(object):
         self._logger.info("Sending file to worker number: {0}".format(partition))
         self.kafka_topic.send_message(hdfs_file,partition)
 
-        self._logger.info("File {0} has been successfully sent to Kafka Topic to: {1}".format(file,self._kafka_topic.Topic))
+        self._logger.info("File {0} has been successfully sent to Kafka Topic: {1}".format(file,self._kafka_topic.Topic))
 
