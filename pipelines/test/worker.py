@@ -35,14 +35,11 @@ class Worker(object):
 
         try:
             self._logger.info("Listening topic:{0}".format(self.kafka_consumer.Topic))
-            for message in [self.kafka_consumer.start()]:
-                if not 'wait' in message:
-                    print(message)
-                    print "new file"
-                    self._new_file(message)
-                else:
-                    self._logger.info('idle')
+            for msg in [self.kafka_consumer.start()]:
+                self._logger.info('{} at offset {1} with key {2}: {3}'.format(msg.topic(), msg.partition(), msg.offset(), str(msg.key())))
+                self._new_file(message)
         except KeyboardInterrupt:
+            self._logger.info('exiting')
             raise SystemExit
 
     def _new_file(self,file):

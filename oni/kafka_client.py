@@ -13,6 +13,7 @@ from confluent_kafka import TopicPartition
 krb_conf_options = {'sasl.mechanisms': 'gssapi',
                             'security.protocol': 'sasl_plaintext',
                             'sasl.kerberos.service.name': 'kafka',
+                            'sasl.kerberos.kinit.cmd': 'kinit -k -t "%{sasl.kerberos.keytab}" %{sasl.kerberos.principal}',
                             'sasl.kerberos.principal': os.getenv('KRB_USER'),
                             'sasl.kerberos.keytab': os.getenv('KEYTABPATH'),
                             'sasl.kerberos.min.time.before.relogin': 60000}
@@ -123,17 +124,17 @@ class KafkaConsumer(object):
     def start(self):
         
         kafka_brokers = '{0}:{1}'.format(self._server,self._port)
+        self._consumer_test = {'bootstrap.servers': kafka_brokers,
+                               'group.id': self._id} 
         self._consumer_conf = {'bootstrap.servers': kafka_brokers,
                                'group.id': self._id, 
-                               'partition.assignment.strategy': 'range',
                                'client.id': 'npsmithx-mac', 
-                               'session.timeout.ms': 6000, 
                                'socket.timeout.ms': 30000,
                                'socket.keepalive.enable': 'true',
                                'reconnect.backoff.jitter.ms': '6000',
-                               'api.version.request': 'false',
+                               'api.version.request': 'false', 'debug': 'all',
                                'broker.version.fallback': '0.9.0.0', 'log.connection.close': 'false',
-                               'default.topic.config': {'auto.commit.enable': 'true', 'auto.commit.interval.ms': '60000'}}
+                               'default.topic.config': {'auto.commit.enable': 'true', 'auto.commit.interval.ms': '60000', 'auto.offset.reset': 'smallest'}}
         
         if os.getenv('ingest_kafka_debug'):
             self._logger.info("librdkafka debug: all")
@@ -143,14 +144,14 @@ class KafkaConsumer(object):
             self._logger.info("Updating Consumer Configuration with Kerberos options")
             self._consumer_conf.update(krb_conf_options)
     
-        c = confluent_kafka_Consumer(**self._consumer_conf)
+        c = confluent_kafka_Consumer(self._consumer_conf)
         subscribed = None
 
         def on_assign (consumer, partitions):
             self._logger.info('Assigned: {0}, {1}'.format(len(partitions), partitions))
             for p in partitions:
                 print(' %s [%d] @ %d' % (p.topic, p.partition, p.offset))
-                p.offset=-2
+                p.offset=-1
             consumer.assign(partitions)
         
         def on_revoke (consumer, partitions):
@@ -162,40 +163,30 @@ class KafkaConsumer(object):
         try:
             #consumer.subscribe([self._topic], on_assign=on_assign, on_revoke=on_revoke)
             if subscribed == None:
-                c.subscribe([self._topic], on_assign=on_assign)
+                c.subscribe([self._topic])
                 self._logger.info('subscribing to ' + self._topic)
-                time.sleep(10)
-                test_msg = c.poll(timeout=1.0)
-                print test_msg
                 subscribed = True
         except KafkaException as e:
             self._logger.info('Error subscribing: {0}'.format(e))
             raise SystemExit
-        
-        if c:
 
-            try:
+        try:
+            while True:
                 print "polling"
                 msg = c.poll(timeout=1.0)
-                type(msg)
                 if msg is None:
-                    print "returning wait"
-                    return 'wait'
+                    continue
                 if msg.error():
                     if msg.error().code() == KafkaError._PARTITION_EOF:
                         self._logger.info('{0} {1} reached end at offset {2}'.format(msg.topic(), msg.partition(), msg.offset()))
-                        return 'wait' 
                     elif msg.error():
                         raise KafkaException(msg.error())
                 else:
-                    self._logger.info('{} at offset {1} with key {2}: {3}'.format(msg.topic(), msg.partition(), msg.offset(), str(msg.key())))
-                    return msg     
-            except KeyboardInterrupt:
-                sys.stderr.write('%% Aborted by user\n')
-                c.close()
-                raise SystemExit
-        else:
-            self._logger.info('exiting')
+                    return msg
+
+        except KeyboardInterrupt:
+            sys.stderr.write('%% Aborted by user\n')
+            c.close()
             raise SystemExit
 
 
