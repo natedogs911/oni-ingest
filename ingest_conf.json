@@ -2,9 +2,9 @@
     "dbname" : "oni",
     "hdfs_app_path" : "/user/oni",
     "kafka":{
-            "kafka_server":"10.219.32.100",
+            "kafka_server":"kafka-broker",
             "kafka_port":"9092",
-            "zookeper_server":"10.219.32.100",
+            "zookeper_server":"zookeeper-server",
             "zookeper_port":"2181"
         }
 }
