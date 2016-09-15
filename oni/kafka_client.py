@@ -127,12 +127,13 @@ class KafkaConsumer(object):
         self._consumer_test = {'bootstrap.servers': kafka_brokers,
                                'group.id': self._id} 
         self._consumer_conf = {'bootstrap.servers': kafka_brokers,
-                               'group.id': self._id, 
+                               'group.id': self._id,
+                               'internal.termination.signal': 0,
                                'client.id': 'npsmithx-mac', 
                                'socket.timeout.ms': 30000,
                                'socket.keepalive.enable': 'true',
                                'reconnect.backoff.jitter.ms': '6000',
-                               'api.version.request': 'false', 'debug': 'all',
+                               'api.version.request': 'false', 'debug': 'generic',
                                'broker.version.fallback': '0.9.0.0', 'log.connection.close': 'false',
                                'default.topic.config': {'auto.commit.enable': 'true', 'auto.commit.interval.ms': '60000', 'auto.offset.reset': 'smallest'}}
         
@@ -159,19 +160,15 @@ class KafkaConsumer(object):
             for p in partitions:
                 print(' %s [%d] @ %d' % (p.topic, p.partition, p.offset))
             consumer.unassign()
-       #def rebalance_cb ()
-        try:
-            #consumer.subscribe([self._topic], on_assign=on_assign, on_revoke=on_revoke)
-            if subscribed == None:
-                c.subscribe([self._topic])
-                self._logger.info('subscribing to ' + self._topic)
-                subscribed = True
-        except KafkaException as e:
-            self._logger.info('Error subscribing: {0}'.format(e))
-            raise SystemExit
+        
+        running = True        
 
         try:
-            while True:
+
+            c.subscribe([self._topic],  on_assign=on_assign, on_revoke=on_revoke)
+            self._logger.info('subscribing to ' + self._topic)
+
+            while running:
                 print "polling"
                 msg = c.poll(timeout=1.0)
                 if msg is None:
@@ -179,17 +176,26 @@ class KafkaConsumer(object):
                 if msg.error():
                     if msg.error().code() == KafkaError._PARTITION_EOF:
                         self._logger.info('{0} {1} reached end at offset {2}'.format(msg.topic(), msg.partition(), msg.offset()))
+                        continue
                     elif msg.error():
                         raise KafkaException(msg.error())
+                    SystemExit
                 else:
                     return msg
 
         except KeyboardInterrupt:
-            sys.stderr.write('%% Aborted by user\n')
-            c.close()
+            self._logger.info('User interrupted')
             raise SystemExit
-
-
+        except:
+            self._logger.info('Unexpected error:, {0}'.format(sys.exc_info()[0]))
+            raise SystemExit
+        finally:
+            self._logger.info('closing down consumer')
+            c.close()
+    
+    def stop(self):
+        running = False
+        
     @property
     def Topic(self):
         return self._topic

@@ -4,6 +4,7 @@ import subprocess
 import datetime
 import logging
 import os
+import sys
 import json 
 from multiprocessing import Process
 from oni.utils import Util
@@ -36,11 +37,17 @@ class Worker(object):
         try:
             self._logger.info("Listening topic:{0}".format(self.kafka_consumer.Topic))
             for msg in [self.kafka_consumer.start()]:
-                self._logger.info('{} at offset {1} with key {2}: {3}'.format(msg.topic(), msg.partition(), msg.offset(), str(msg.key())))
-                self._new_file(message)
+                self._logger.info('{0} at offset {1} with key {2}: {3}'.format(msg.topic(), msg.partition(), msg.offset(), str(msg.key())))
+                self._new_file(msg.value())
+
         except KeyboardInterrupt:
             self._logger.info('exiting')
             raise SystemExit
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
+            raise
+        finally:
+            self.kafka_consumer.stop()
 
     def _new_file(self,file):
 
