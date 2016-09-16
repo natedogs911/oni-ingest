@@ -7,6 +7,15 @@ from kafka import KafkaConsumer as KC
 from kafka.partitioner.roundrobin import RoundRobinPartitioner
 from kafka.common import TopicPartition
 
+#librdkafka kerberos configs
+krb_conf_options = {'sasl.mechanisms': 'gssapi',
+                            'security.protocol': 'sasl_plaintext',
+                            'sasl.kerberos.service.name': 'kafka',
+                            'sasl.kerberos.kinit.cmd': 'kinit -k -t "%{sasl.kerberos.keytab}" %{sasl.kerberos.principal}',
+                            'sasl.kerberos.principal': os.getenv('KRB_USER'),
+                            'sasl.kerberos.keytab': os.getenv('KEYTABPATH'),
+                            'sasl.kerberos.min.time.before.relogin': 60000}
+
 class KafkaTopic(object):
 
 
@@ -28,6 +37,7 @@ class KafkaTopic(object):
         self._num_of_partitions = partitions
         self._partitions = []
         self._partitioner = None
+        self._librdkafka_debug = {'debug': 'all'}
 
         # create topic with partitions
         self._create_topic()
@@ -37,10 +47,10 @@ class KafkaTopic(object):
         self._logger.info("Creating topic: {0} with {1} parititions".format(self._topic,self._num_of_partitions))     
 
         # Create partitions for the workers.
-        self._partitions = [ TopicPartition(self._topic,p) for p in range(int(self._num_of_partitions))]        
+        #self._partitions = [ TopicPartition(self._topic,p) for p in range(int(self._num_of_partitions))]        
 
         # create partitioner
-        self._partitioner = RoundRobinPartitioner(self._partitions)
+        #self._partitioner = RoundRobinPartitioner(self._partitions)
         
         # get script path 
         zk_conf = "{0}:{1}".format(self._zk_server,self._zk_port)
@@ -53,10 +63,33 @@ class KafkaTopic(object):
 
         self._logger.info("Sending message to: Topic: {0} Partition:{1}".format(self._topic,topic_partition))
         kafka_brokers = '{0}:{1}'.format(self._server,self._port)             
-        producer = KafkaProducer(bootstrap_servers=[kafka_brokers],api_version_auto_timeout_ms=3600000)
-        future = producer.send(self._topic,message,partition=topic_partition)
+        self._producer_conf = {'bootstrap.servers': kafka_brokers,
+                               'session.timeout.ms': 6000, 
+                               'api.version.request': 'false',
+                               'internal.termination.signal': 0,
+                               'broker.version.fallback': '0.9.0.0',
+                               'log.connection.close': 'false',
+                               'socket.keepalive.enable': 'false', 
+                               'default.topic.config': {'request.required.acks': 'all'}}
+        
+        if os.getenv('ingest_kafka_debug'):
+            self._logger.info("librdkafka debug: all")
+            self._producer_conf.update(self._librdkafka_debug)
+ 
+        if os.getenv('KRB_AUTH'):
+            self._logger.info("Updating Consumer Configuration with Kerberos options")
+            self._producer_conf.update(krb_conf_options)
+        
+        def delivery_callback (err, msg):
+            if err:
+                self._logger.info('Message failed delivery: {0}'.format(err))
+            else:
+                self._logger.info('Message delivered to topic {0} on {1}'.format(msg.topic(), msg.partition()))
+
+        producer = confluent_kafka_Producer(**self._producer_conf)
+        future = producer.produce(self._topic, message.encode('utf-8'), callback=delivery_callback)
+        producer.poll(0)
         producer.flush()
-        producer.close()
 
     @property
     def Topic(self):
@@ -64,8 +97,8 @@ class KafkaTopic(object):
     
     @property
     def Partition(self):        
-        return self._partitioner.partition(self._topic).partition
-
+        #return self._partitioner.partition(self._topic).partition
+        return 0
 
 
 class KafkaConsumer(object):
@@ -76,12 +109,14 @@ class KafkaConsumer(object):
 
     def _initialize_members(self,topic,server,port,zk_server,zk_port,partition):
 
+        self._logger = Util.get_logger("ONI.INGEST.KAFKA")
         self._topic = topic
         self._server = server
         self._port = port
         self._zk_server = zk_server
         self._zk_port = zk_port
         self._id = partition
+        self._librdkafka_debug = {'debug': 'all'}
 
     def start(self):
         
