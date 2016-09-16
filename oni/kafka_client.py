@@ -121,11 +121,78 @@ class KafkaConsumer(object):
     def start(self):
         
         kafka_brokers = '{0}:{1}'.format(self._server,self._port)
-        consumer =  KC(bootstrap_servers=[kafka_brokers],group_id=self._topic)
-        partition = [TopicPartition(self._topic,int(self._id))]
-        consumer.assign(partitions=partition)
-        consumer.poll()
-        return consumer
+        kafka_brokers = '{0}:{1}'.format(self._server,self._port)
+        self._consumer_test = {'bootstrap.servers': kafka_brokers,
+                               'group.id': self._id} 
+        self._consumer_conf = {'bootstrap.servers': kafka_brokers,
+                               'group.id': self._id,
+                               'internal.termination.signal': 0,
+                               'client.id': 'npsmithx-mac', 
+                               'socket.timeout.ms': 30000,
+                               'socket.keepalive.enable': 'true',
+                               'reconnect.backoff.jitter.ms': '6000',
+                               'api.version.request': 'false', 'debug': 'generic',
+                               'broker.version.fallback': '0.9.0.0', 'log.connection.close': 'false',
+                               'default.topic.config': {'auto.commit.enable': 'true', 'auto.commit.interval.ms': '60000', 'auto.offset.reset': 'smallest'}}
+        
+        if os.getenv('ingest_kafka_debug'):
+            self._logger.info("librdkafka debug: all")
+            self._consumer_conf.update(self._librdkafka_debug)
+
+        if os.getenv('KRB_AUTH'):
+            self._logger.info("Updating Consumer Configuration with Kerberos options")
+            self._consumer_conf.update(krb_conf_options)
+    
+        consumer = confluent_kafka_Consumer(self._consumer_conf)
+        subscribed = None
+
+        def on_assign (consumer, partitions):
+            self._logger.info('Assigned: {0}, {1}'.format(len(partitions), partitions))
+            for p in partitions:
+                print(' %s [%d] @ %d' % (p.topic, p.partition, p.offset))
+                p.offset=-1
+            consumer.assign(partitions)
+        
+        def on_revoke (consumer, partitions):
+            self._logger.info('Revoked: {0} {1}'.format(len(partitions), partitions))
+            for p in partitions:
+                print(' %s [%d] @ %d' % (p.topic, p.partition, p.offset))
+            consumer.unassign()
+        
+        running = True        
+
+        try:
+
+            consumer.subscribe([self._topic],  on_assign=on_assign, on_revoke=on_revoke)
+            self._logger.info('subscribing to ' + self._topic)
+
+            while running:
+                print "polling"
+                msg = consumer.poll(timeout=1.0)
+                if msg is None:
+                    continue
+                if msg.error():
+                    if msg.error().code() == KafkaError._PARTITION_EOF:
+                        self._logger.info('{0} {1} reached end at offset {2}'.format(msg.topic(), msg.partition(), msg.offset()))
+                        continue
+                    elif msg.error():
+                        raise KafkaException(msg.error())
+                    SystemExit
+                else:
+                    return msg
+
+        except KeyboardInterrupt:
+            self._logger.info('User interrupted')
+            raise SystemExit
+        except:
+            self._logger.info('Unexpected error:, {0}'.format(sys.exc_info()[0]))
+            raise SystemExit
+        finally:
+            self._logger.info('closing down consumer')
+            consumer.close()
+    
+    def stop(self):
+        running = False
 
     @property
     def Topic(self):
