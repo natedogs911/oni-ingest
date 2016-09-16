@@ -36,8 +36,8 @@ class Worker(object):
     def start(self):
 
         self._logger.info("Listening topic:{0}".format(self.kafka_consumer.Topic))
-        for message in self.kafka_consumer.start():
-            self._new_file(message.value)
+        for message in [self.kafka_consumer.start()]:
+            self._new_file(message.value())
 
     def _new_file(self,file):
 
