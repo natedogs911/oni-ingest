@@ -20,7 +20,7 @@ class Kerberos(object):
 
         self._kinit_args = [self._kinit,self._kinitopts,self._keytab,self._krb_user]
 
-	def authenticate(self):
+    def authenticate(self):
 
 		kinit = subprocess.Popen(self._kinit_args, stderr = subprocess.PIPE)
 		output,error = kinit.communicate()
