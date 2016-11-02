@@ -22,7 +22,7 @@ class Kerberos(object):
 
     def authenticate(self):
 
-		kinit = subprocess.Popen(self._kinit_args, stderr = subprocess.PIPE)
+		kinit = subprocess.Popen(self._kinit_args, shell=True, stderr = subprocess.PIPE)
 		output,error = kinit.communicate()
 		if not kinit.returncode == 0:
 			if error:
